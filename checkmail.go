@@ -48,8 +48,10 @@ func ValidateFormat(email string) error {
 // ValidateMX validate if MX record exists for a domain.
 func ValidateMX(email string) error {
 	_, host := split(email)
-	if _, err := net.LookupMX(host); err != nil {
+	if mx, err := net.LookupMX(host); err != nil {
 		return ErrUnresolvableHost
+	} else if len(mx) == 0 {
+		return ErrNoMXRecord
 	}
 
 	return nil
@@ -61,6 +63,8 @@ func ValidateHost(email string) error {
 	mx, err := net.LookupMX(host)
 	if err != nil {
 		return ErrUnresolvableHost
+	} else if len(mx) == 0 {
+		return ErrNoMXRecord
 	}
 	client, err := DialTimeout(fmt.Sprintf("%s:%d", mx[0].Host, 25), forceDisconnectAfter)
 	if err != nil {
@@ -79,8 +83,7 @@ func ValidateHostAndUser(serverHostName, serverMailAddress, email string) error 
 	mx, err := net.LookupMX(host)
 	if err != nil {
 		return ErrUnresolvableHost
-	}
-	if len(mx) == 0 {
+	} else if len(mx) == 0 {
 		return ErrNoMXRecord
 	}
 	client, err := DialTimeout(fmt.Sprintf("%s:%d", mx[0].Host, 25), forceDisconnectAfter)
